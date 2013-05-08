@@ -3,6 +3,8 @@ class HeadStrong < RTanque::Bot::Brain
   include RTanque::Bot::BrainHelper
 
   def tick!
+    p distance_from_wall(:top)
+    command.speed = 1
     ## main logic goes here
 
     # use self.sensors to detect things
@@ -18,9 +20,9 @@ class HeadStrong < RTanque::Bot::Brain
   def distance_from_wall(wall)
     case wall.to_sym
     when :top
-      sensors.position.y
-    when :bottom
       arena.height - sensors.position.y
+    when :bottom
+      sensors.position.y
     when :left
       sensors.position.x
     when :right
