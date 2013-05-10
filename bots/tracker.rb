@@ -10,37 +10,42 @@ class Tracker < RTanque::Bot::Brain
 
   def initialize(*args)
     self.competitors = []
+    @reverse_ticks = 0
     super
   end
 
   def tick!
     @current_tick_index = self.sensors.ticks
     track_competitors
+    new_heading = sensors.heading
     if best_target
-      new_heading =
+      new_turret_heading =
         RTanque::Heading.new_between_points(
           self.sensors.position,
           best_target.position_to_fire_at(current_tick_index)
         )
-      command.turret_heading = new_heading
-      command.radar_heading = new_heading
+      command.turret_heading = new_turret_heading
+      command.radar_heading = new_turret_heading
       command.fire(2)
+      if best_target.distance < 200
+        new_heading = new_heading + RTanque::Heading::EIGHTH_ANGLE * 2
+      else
+        new_heading = sensors.heading + 0.1
+      end
     else
-      new_heading = sensors.turret_heading - 0.1
-      command.radar_heading = new_heading
-      command.turret_heading = new_heading
+      new_turret_heading = sensors.turret_heading - 0.1
+      command.radar_heading = new_turret_heading
+      command.turret_heading = new_turret_heading
+      new_heading = sensors.heading + 0.1
+    end
+    if sensors.position.on_wall? && @reverse_ticks > 50
+      @reverse_ticks = 0
+      command.heading = (new_heading + Math::PI) % (Math::PI * 2)
+    else
+      command.heading = new_heading
+      @reverse_ticks += 1
     end
     command.speed = MAX_BOT_SPEED
-    command.heading = sensors.heading + 0.1
-    if current_tick_index % 50 == 0
-      puts
-      s = competitors.map do |tank|
-        "#{tank.name} at [#{tank.position.x.round(2)}, #{tank.position.y.round(2)}] (#{tank.distance.round(2)} clicks away @ #{tank.heading.radians.round(2)} radians), speed: #{tank.speed.round(2)}"
-      end
-      puts s.join("\n")
-    elsif current_tick_index % 5000 == 0
-      raise "done"
-    end
   end
 
   # maneuver states:
