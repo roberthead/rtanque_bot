@@ -1,5 +1,8 @@
 require 'rtanque'
 
+ARENA_HEIGHT = 400
+ARENA_WIDTH = 400
+
 RSpec.configure do |config|
   config.treat_symbols_as_metadata_keys_with_true_values = true
   config.run_all_when_everything_filtered = true
@@ -16,21 +19,21 @@ RSpec.configure do |config|
   end
 
   config.before(:all) do
-    @arena = RTanque::Arena.new(100, 100)
+    @arena = RTanque::Arena.new(ARENA_WIDTH, ARENA_HEIGHT)
     RTanque::Configuration.config do
       raise_brain_tick_errors false # errors should be correctly captured
     end
   end
 
   module BrainHelper
-    def on_brain_tick!(&block)
-      Class.new(HeadStrong).tap do |test_brain|
+    def on_brain_tick!(brain_klass, &block)
+      Class.new(brain_klass).tap do |test_brain|
         test_brain.send(:define_method, :tick!, &block)
       end
     end
 
-    def brain_bot(&tick)
-      RTanque::Bot.new(@arena, on_brain_tick!(&tick))
+    def brain_bot(brain_klass, &tick)
+      RTanque::Bot.new(@arena, on_brain_tick!(brain_klass, &tick))
     end
   end
   config.include BrainHelper
